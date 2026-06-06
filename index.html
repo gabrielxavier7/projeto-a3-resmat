@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Análise Estrutural de Cadeira - ResMAT</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ========================== HEADER ========================== -->
+  <header>
+    <h1>🪑 Software de Análise Estrutural</h1>
+    <p>Análise Simplificada de Cadeiras - Disciplina Resistência dos Materiais</p>
+  </header>
+
+  <!-- ========================== MAIN CONTENT ========================== -->
+  <main class="container">
+
+    <!-- ==================== SEÇÃO DE ENTRADA DE DADOS ==================== -->
+    <section id="secaoFormulario">
+      <h2>📋 Dados de Entrada</h2>
+      
+      <form id="formularioAnalise">
+        <!-- Grid para os campos do formulário -->
+        <div class="formulario-grid">
+          
+          <!-- Peso da pessoa -->
+          <div class="form-group">
+            <label for="peso">Peso da Pessoa (kg)</label>
+            <input 
+              type="number" 
+              id="peso" 
+              name="peso"
+              placeholder="Ex: 75" 
+              min="1" 
+              step="0.1"
+            />
+          </div>
+
+          <!-- Altura da cadeira -->
+          <div class="form-group">
+            <label for="altura">Altura da Cadeira (cm)</label>
+            <input 
+              type="number" 
+              id="altura" 
+              name="altura" 
+              placeholder="Ex: 90" 
+              min="1" 
+              step="0.1"
+            />
+          </div>
+
+          <!-- Largura do assento -->
+          <div class="form-group">
+            <label for="larguraAssento">Largura do Assento (cm)</label>
+            <input 
+              type="number" 
+              id="larguraAssento" 
+              name="larguraAssento" 
+              placeholder="Ex: 45" 
+              min="1" 
+              step="0.1"
+            />
+          </div>
+
+          <!-- Profundidade do assento -->
+          <div class="form-group">
+            <label for="profundidade">Profundidade do Assento (cm)</label>
+            <input 
+              type="number" 
+              id="profundidade" 
+              name="profundidade" 
+              placeholder="Ex: 40" 
+              min="1" 
+              step="0.1"
+            />
+          </div>
+
+          <!-- Espessura da perna -->
+          <div class="form-group">
+            <label for="espessura">Espessura da Perna (cm)</label>
+            <input 
+              type="number" 
+              id="espessura" 
+              name="espessura" 
+              placeholder="Ex: 4" 
+              min="0.1" 
+              step="0.1"
+            />
+          </div>
+
+          <!-- Fator de Segurança -->
+          <div class="form-group">
+            <label for="fatorSeguranca">Fator de Segurança (recomendado: 2-3)</label>
+            <input 
+              type="number" 
+              id="fatorSeguranca" 
+              name="fatorSeguranca" 
+              placeholder="Ex: 2" 
+              min="1" 
+              step="0.1" 
+              value="2"
+            />
+          </div>
+
+          <!-- Formato da perna -->
+          <div class="form-group">
+            <label for="formato">Formato da Perna</label>
+            <select id="formato" name="formato">
+              <option value="quadrada">Quadrada</option>
+              <option value="circular">Circular</option>
+            </select>
+          </div>
+
+          <!-- Material da cadeira -->
+          <div class="form-group">
+            <label for="material">Material da Cadeira</label>
+            <select id="material" name="material">
+              <option value="madeira">Madeira</option>
+              <option value="aco">Aço</option>
+              <option value="aluminio">Alumínio</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Botões de ação -->
+        <div class="botoes-formulario">
+          <button type="button" id="btnCalcular" class="btn btn-calcular">
+            ⚙️ Calcular Análise
+          </button>
+          <button type="button" id="btnExemplo" class="btn btn-secundario">
+            📊 Preencher Exemplo
+          </button>
+          <button type="button" id="btnLimpar" class="btn btn-secundario">
+            🗑️ Limpar Dados
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ==================== SEÇÃO DE RESULTADOS ==================== -->
+    <section id="secaoResultados" style="display: none;">
+      <!-- Preenchido dinamicamente por JavaScript -->
+    </section>
+
+    <!-- ==================== SEÇÃO DE DIAGRAMA DE MOMENTO ==================== -->
+    <section id="secaoDiagrama" style="display: none;">
+      <h2>📈 Diagrama de Momento Fletor</h2>
+      <div class="diagram-card">
+        <div class="diagram-canvas-wrapper">
+          <canvas id="momentoCanvas" width="760" height="300"></canvas>
+          <div class="canvas-legenda">
+            <span>Momento máximo calculado: <strong id="momentoMaximoTexto">0 N·m</strong></span>
+            <span>Base ilustrativa do assento e das pernas da cadeira</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SEÇÃO DE FÓRMULAS UTILIZADAS ==================== -->
+    <section id="secaoFormulas">
+      <h2>📚 Fórmulas Utilizadas</h2>
+      <div class="formulas-grid">
+        <div class="formula-card">
+          <h3>Força Peso</h3>
+          <p class="formula-equation">F = m × g</p>
+          <p class="formula-description">Calcula o peso total aplicado à cadeira com massa m em kg e aceleração g = 9,81 m/s².</p>
+        </div>
+        <div class="formula-card">
+          <h3>Tensão Normal</h3>
+          <p class="formula-equation">σ = F / A</p>
+          <p class="formula-description">Tensão de compressão considerando força por perna e área da seção transversal.</p>
+        </div>
+        <div class="formula-card">
+          <h3>Momento Fletor</h3>
+          <p class="formula-equation">M = F × (L / 2)</p>
+          <p class="formula-description">Modelo simplificado para o momento fletor usando metade da largura do assento como braço de alavanca.</p>
+        </div>
+        <div class="formula-card">
+          <h3>Tensão de Flexão</h3>
+          <p class="formula-equation">σ<sub>f</sub> = (M × c) / I</p>
+          <p class="formula-description">Tensão de flexão na fibra extrema da seção considerando o momento de inércia e a distância c.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SEÇÃO DE RELATÓRIO ==================== -->
+    <section id="secaoRelatorio" style="display: none;">
+      <div class="relatorio-header">
+        <h2>📄 Relatório Técnico Completo</h2>
+        <button type="button" id="btnCopiarRelatorio" class="btn-copiar" onclick="copiarRelatorio()">
+          📋 Copiar Relatório
+        </button>
+      </div>
+      <textarea 
+        id="relatorioTexto" 
+        readonly 
+        placeholder="O relatório será gerado aqui..."
+      ></textarea>
+      <p style="margin-top: 1rem; font-size: 0.9rem; color: #64748b;">
+        💡 Dica: Use Ctrl+C para copiar o conteúdo ou clique no botão "Copiar Relatório". 
+        O texto está pronto para ser colado em documentos e trabalhos acadêmicos.
+      </p>
+    </section>
+
+    <!-- ==================== SEÇÃO DE INFORMAÇÕES ==================== -->
+    <section id="secaoInfo">
+      <h2>ℹ️ Informações do Software</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        
+        <div>
+          <h3 style="color: var(--cor-primaria); margin-bottom: 1rem;">📐 Modelo Simplificado</h3>
+          <p>
+            Este software utiliza um modelo acadêmico simplificado para análise estrutural. 
+            A cadeira é modelada com:
+          </p>
+          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+            <li>4 pernas estruturais idênticas</li>
+            <li>Carga uniformemente distribuída</li>
+            <li>Análise de compressão e flexão</li>
+            <li>Fator de segurança aplicável</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 style="color: var(--cor-primaria); margin-bottom: 1rem;">🔧 Cálculos Realizados</h3>
+          <p>O software calcula:</p>
+          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+            <li>Força peso total (F = m·g)</li>
+            <li>Distribuição em cada perna</li>
+            <li>Tensão normal (σ = F/A)</li>
+            <li>Momento fletor simplificado</li>
+            <li>Tensão de flexão (σ_f = M·c/I)</li>
+            <li>Verificação de segurança</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 style="color: var(--cor-primaria); margin-bottom: 1rem;">⚠️ Limitações</h3>
+          <p>
+            Este software é para fins educacionais. Não considera:
+          </p>
+          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+            <li>Não-uniformidades do material</li>
+            <li>Efeitos dinâmicos ou impactos</li>
+            <li>Fadiga do material</li>
+            <li>Análise dinâmica de vibrações</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+        <h4 style="color: #92400e; margin-bottom: 0.5rem;">📚 Referência Acadêmica</h4>
+        <p style="color: #78350f; font-size: 0.95rem;">
+          Os cálculos seguem os princípios básicos de Resistência dos Materiais aplicados a estruturas simples. 
+          Para análises reais, recomenda-se validação com software profissional (ANSYS, SAP2000) e conformidade 
+          com normas técnicas como NBR 7190 (madeira) e NBR 8800 (aço).
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================== FOOTER ========================== -->
+  <footer>
+    <p><strong>Software de Análise Estrutural de Cadeira</strong></p>
+    <p>Disciplina: Resistência dos Materiais</p>
+    <small>© 2024 - Desenvolvimento em HTML5, CSS3 e JavaScript Puro | Código Aberto para Fins Educacionais</small>
+  </footer>
+
+  <!-- ========================== SCRIPTS ========================== -->
+  <!-- Carregar scripts em ordem: materiais → cálculos → relatório → aplicação -->
+  <script src="js/materials.js"></script>
+  <script src="js/calculations.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/diagram.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

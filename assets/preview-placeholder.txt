@@ -1,0 +1,11 @@
+Este arquivo é um placeholder para a pasta assets.
+
+Você pode adicionar aqui:
+- Imagens de preview do software
+- Diagramas de estrutura (em SVG)
+- Screenshots da interface
+- Documentação em PDF
+- Exemplos de relatórios gerados
+
+Por enquanto, o software funciona apenas com HTML, CSS e JavaScript puro.
+Não há dependência de imagens externas para o funcionamento básico.
