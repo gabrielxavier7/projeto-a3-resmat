@@ -22,7 +22,7 @@ const DADOS_EXEMPLO = {
   altura: 90,
   larguraAssento: 45,
   profundidade: 45,
-  espessura: 6,
+  espessura: 6.06,
   formato: 'quadrada',
   material: 'madeira',
   fatorSeguranca: 2
@@ -169,6 +169,33 @@ function formatarComUnidade(valor, unidade, casas = 2) {
 }
 
 /**
+ * Atualiza o cartão do exemplo pré-definido com os valores e o status
+ * @param {object} resultados - objeto retornado por analisarCadeira()
+ */
+function atualizarCartaoExemplo(resultados) {
+  const el = document.getElementById('exemploPadrao');
+  if (!el) return;
+
+  // Preencher inputs básicos
+  document.getElementById('exemploEspessura').textContent = `${DADOS_EXEMPLO.espessura}` + ' cm';
+  document.getElementById('exemploFormato').textContent = DADOS_EXEMPLO.formato === 'quadrada' ? 'Quadrada' : 'Circular';
+  document.getElementById('exemploMaterial').textContent = DADOS_EXEMPLO.material.charAt(0).toUpperCase() + DADOS_EXEMPLO.material.slice(1);
+  document.getElementById('exemploFS').textContent = `${DADOS_EXEMPLO.fatorSeguranca}x`;
+
+  // Se tiver resultados, atualizar status
+  const badge = document.getElementById('exemploBadge');
+  if (resultados && resultados.seguranca) {
+    if (resultados.seguranca.seguro) {
+      badge.className = 'badge-seguro';
+      badge.textContent = '✓ Seguro';
+    } else {
+      badge.className = 'badge-inseguro';
+      badge.textContent = '✗ Não seguro';
+    }
+  }
+}
+
+/**
  * Renderiza a seção de resultados na interface
  * @param {object} resultados - Objeto retornado por analisarCadeira()
  */
@@ -251,6 +278,14 @@ function exibirResultados(resultados) {
           <span class="label">Limite flexão:</span>
           <span class="valor">${formatarComUnidade(material.tensaoLimiteFlexao, 'MPa')}</span>
         </div>
+        <div class="resultado-item">
+          <span class="label">Cisalhamento:</span>
+          <span class="valor">${formatarComUnidade(resultados.tensaoCisalhamento, 'MPa')}</span>
+        </div>
+        <div class="resultado-item">
+          <span class="label">Limite cisalhamento:</span>
+          <span class="valor">${formatarComUnidade(material.tensaoLimiteCisalhamento, 'MPa')}</span>
+        </div>
       </div>
 
       <!-- CARD 4: GRANDEZAS GEOMÉTRICAS -->
@@ -259,6 +294,22 @@ function exibirResultados(resultados) {
         <div class="resultado-item">
           <span class="label">Momento fletor:</span>
           <span class="valor">${formatarComUnidade(resultados.momentoFletor, 'N·m', 4)}</span>
+        </div>
+        <div class="resultado-item">
+          <span class="label">Momento torsor (assumido):</span>
+          <span class="valor">${formatarComUnidade(resultados.momentoTorsor.torsaoAssumida, 'N·m', 4)}</span>
+        </div>
+        <div class="resultado-item">
+          <span class="label">Tensão por torção (assumida):</span>
+          <span class="valor">${formatarComUnidade(resultados.tensaoTorsaoAssumida, 'MPa', 4)}</span>
+        </div>
+        <div class="resultado-item">
+          <span class="label">Momento torsor (máx):</span>
+          <span class="valor">${formatarComUnidade(resultados.momentoTorsor.torsaoMaxima, 'N·m', 4)}</span>
+        </div>
+        <div class="resultado-item">
+          <span class="label">Tensão por torção (máx):</span>
+          <span class="valor">${formatarComUnidade(resultados.tensaoTorsaoMaxima, 'MPa', 4)}</span>
         </div>
         <div class="resultado-item">
           <span class="label">Momento inércia:</span>
@@ -288,6 +339,14 @@ function exibirResultados(resultados) {
         <div class="resultado-item ${seguranca.flexaoOK ? 'ok' : 'erro'}">
           <span class="label">Flexão:</span>
           <span class="valor">${seguranca.flexaoOK ? '✓ Aprovado' : '✗ Reprovado'}</span>
+        </div>
+        <div class="resultado-item ${seguranca.cisalhamentoOK ? 'ok' : 'erro'}">
+          <span class="label">Cisalhamento:</span>
+          <span class="valor">${seguranca.cisalhamentoOK ? '✓ Aprovado' : '✗ Reprovado'}</span>
+        </div>
+        <div class="resultado-item ${seguranca.torsaoMaxOK ? 'ok' : 'erro'}">
+          <span class="label">Torção (máx):</span>
+          <span class="valor">${seguranca.torsaoMaxOK ? '✓ Aprovado' : '✗ Reprovado'}</span>
         </div>
         <div class="resultado-item" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
           <span class="label">Status Geral:</span>
@@ -332,6 +391,12 @@ function exibirResultados(resultados) {
     <div class="diag-item diag-${diagnostico.flexao.includes('✓') ? 'ok' : 'erro'}">
       ${diagnostico.flexao}
     </div>
+    <div class="diag-item">
+      ${diagnostico.cisalhamento}
+    </div>
+    <div class="diag-item">
+      ${diagnostico.torsao}
+    </div>
   `;
 
   if (diagnostico.recomendacoes.length > 0) {
@@ -343,6 +408,9 @@ function exibirResultados(resultados) {
   }
 
   elDiagnostico.innerHTML = diagHTML;
+
+  // Atualizar cartão do exemplo com o último resultado
+  atualizarCartaoExemplo(resultados);
 
   // Scroll suave até os resultados
   setTimeout(() => {
@@ -491,6 +559,15 @@ function inicializarAplicacao() {
   });
 
   console.log('✓ Aplicação inicializada com sucesso');
+
+  // Preencher e executar o exemplo padrão automaticamente na primeira carga
+  setTimeout(() => {
+    try {
+      preencherExemplo();
+    } catch (e) {
+      console.warn('Não foi possível preencher o exemplo automaticamente:', e);
+    }
+  }, 300);
 }
 
 // Inicializar quando DOM estiver pronto
