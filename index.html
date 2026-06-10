@@ -136,6 +136,22 @@
             🗑️ Limpar Dados
           </button>
         </div>
+        
+        <!-- Cartão do exemplo pré-definido -->
+        <div id="exemploPadrao" class="exemplo-card" style="margin-top:1.25rem; background:#fff; padding:1rem; border-radius:8px; box-shadow:var(--sombra);">
+          <h3 style="margin-top:0;">🔎 Exemplo Pré-definido (Seguro)</h3>
+          <ul style="margin-left:1rem; margin-bottom:0.5rem;">
+            <li>Peso: <strong>90 kg</strong></li>
+            <li>Altura da cadeira: <strong>90 cm</strong></li>
+            <li>Largura do assento: <strong>45 cm</strong></li>
+            <li>Profundidade do assento: <strong>45 cm</strong></li>
+            <li>Espessura da perna: <strong id="exemploEspessura">6.06 cm</strong></li>
+            <li>Formato: <strong id="exemploFormato">Quadrada</strong></li>
+            <li>Material: <strong id="exemploMaterial">Madeira</strong></li>
+            <li>Fator de segurança: <strong id="exemploFS">2x</strong></li>
+          </ul>
+          <div id="exemploStatus">Status: <span id="exemploBadge" class="badge-seguro">✓ Seguro</span></div>
+        </div>
       </form>
     </section>
 
@@ -174,8 +190,18 @@
         </div>
         <div class="formula-card">
           <h3>Momento Fletor</h3>
-          <p class="formula-equation">M = F × (L / 2)</p>
-          <p class="formula-description">Modelo simplificado para o momento fletor usando metade da largura do assento como braço de alavanca.</p>
+          <p class="formula-equation">M = F_total × L / 4</p>
+          <p class="formula-description">Momento máximo para carga concentrada central em viga biapoiada. Aqui convertemos a força por perna em força total antes de aplicar a fórmula.</p>
+        </div>
+        <div class="formula-card">
+          <h3>Tensão de Cisalhamento</h3>
+          <p class="formula-equation">τ = V / A</p>
+          <p class="formula-description">Tensão de cisalhamento simples considerando a força cortante V (força por perna) e a área da seção.</p>
+        </div>
+        <div class="formula-card">
+          <h3>Momento Torsor</h3>
+          <p class="formula-equation">T = F_total × e</p>
+          <p class="formula-description">Estimativa de torção para cargas excêntricas: e é a excentricidade (distância ao centro do assento). Tensão por torção estimada por τ = T·r / J (dependendo da seção).</p>
         </div>
         <div class="formula-card">
           <h3>Tensão de Flexão</h3>
@@ -233,6 +259,8 @@
             <li>Tensão normal (σ = F/A)</li>
             <li>Momento fletor simplificado</li>
             <li>Tensão de flexão (σ_f = M·c/I)</li>
+            <li>Tensão de cisalhamento (τ = V/A)</li>
+            <li>Momento torsor estimado (T = F·e)</li>
             <li>Verificação de segurança</li>
           </ul>
         </div>

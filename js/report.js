@@ -79,6 +79,11 @@ function gerarRelatorioTexto(resultados) {
   relatorio += `   Momento fletor simplificado: ${formatarNumero(resultados.momentoFletor, 4)} N·m\n`;
   relatorio += `   Momento de inércia: ${formatarNumero(resultados.inercia * 1e8, 4)} × 10⁻⁸ m⁴\n`;
   relatorio += `   Tensão de flexão: ${formatarNumero(resultados.tensaoFlexao, 2)} MPa\n\n`;
+  relatorio += `   Tensão de cisalhamento (τ): ${formatarNumero(resultados.tensaoCisalhamento, 3)} MPa\n`;
+  relatorio += `   Momento torsor (assumido): ${formatarNumero(resultados.momentoTorsor.torsaoAssumida, 4)} N·m\n`;
+  relatorio += `   Tensão por torção (assumida): ${formatarNumero(resultados.tensaoTorsaoAssumida, 3)} MPa\n`;
+  relatorio += `   Momento torsor (máx): ${formatarNumero(resultados.momentoTorsor.torsaoMaxima, 4)} N·m\n`;
+  relatorio += `   Tensão por torção (máx): ${formatarNumero(resultados.tensaoTorsaoMaxima, 3)} MPa\n\n`;
 
   // SEÇÃO 4: VERIFICAÇÃO DE SEGURANÇA
   relatorio += '4. VERIFICAÇÃO DE SEGURANÇA\n';
@@ -108,6 +113,32 @@ function gerarRelatorioTexto(resultados) {
   } else {
     const excesso = resultados.tensaoFlexao - material.tensaoLimiteFlexao;
     relatorio += `      Excedência: ${formatarNumero(excesso, 2)} MPa\n`;
+  }
+
+  // Verificação cisalhamento
+  const statusCisalhamento = seguranca.cisalhamentoOK ? '✓ APROVADO' : '✗ REPROVADO';
+  relatorio += `\n   Cisalhamento: ${statusCisalhamento}\n`;
+  relatorio += `      Tensão calculada: ${formatarNumero(resultados.tensaoCisalhamento, 3)} MPa\n`;
+  relatorio += `      Limite permitido: ${formatarNumero(material.tensaoLimiteCisalhamento, 3)} MPa\n`;
+  if (seguranca.cisalhamentoOK) {
+    const margem = material.tensaoLimiteCisalhamento - resultados.tensaoCisalhamento;
+    relatorio += `      Margem de segurança: ${formatarNumero(margem, 3)} MPa (+${formatarNumero((margem / material.tensaoLimiteCisalhamento) * 100, 1)}%)\n`;
+  } else {
+    const excesso = resultados.tensaoCisalhamento - material.tensaoLimiteCisalhamento;
+    relatorio += `      Excedência: ${formatarNumero(excesso, 3)} MPa\n`;
+  }
+
+  // Verificação torção (máx)
+  const statusTorsao = seguranca.torsaoMaxOK ? '✓ APROVADO' : '✗ REPROVADO';
+  relatorio += `\n   Torção (máx): ${statusTorsao}\n`;
+  relatorio += `      Tensão calculada: ${formatarNumero(resultados.tensaoTorsaoMaxima, 3)} MPa\n`;
+  relatorio += `      Limite permitido (cisalhamento): ${formatarNumero(material.tensaoLimiteCisalhamento, 3)} MPa\n`;
+  if (seguranca.torsaoMaxOK) {
+    const margem = material.tensaoLimiteCisalhamento - resultados.tensaoTorsaoMaxima;
+    relatorio += `      Margem de segurança: ${formatarNumero(margem, 3)} MPa (+${formatarNumero((margem / material.tensaoLimiteCisalhamento) * 100, 1)}%)\n`;
+  } else {
+    const excesso = resultados.tensaoTorsaoMaxima - material.tensaoLimiteCisalhamento;
+    relatorio += `      Excedência: ${formatarNumero(excesso, 3)} MPa\n`;
   }
 
   relatorio += '\n';
@@ -175,6 +206,8 @@ function gerarDiagnostico(resultados) {
   const mensagens = {
     compressao: '',
     flexao: '',
+    cisalhamento: '',
+    torsao: '',
     recomendacoes: []
   };
 
@@ -198,6 +231,18 @@ function gerarDiagnostico(resultados) {
     if (!mensagens.recomendacoes.includes('Aumentar espessura da perna')) {
       mensagens.recomendacoes.push('Aumentar espessura da perna');
     }
+  }
+
+  // Informações de cisalhamento (apenas informativo)
+  mensagens.cisalhamento = `Cisalhamento (τ): ${formatarNumero(resultados.tensaoCisalhamento, 3)} MPa`;
+
+  // Informações de torção (assumida e máxima)
+  mensagens.torsao = `Torção (assumida): T=${formatarNumero(resultados.momentoTorsor.torsaoAssumida, 3)} N·m, τ=${formatarNumero(resultados.tensaoTorsaoAssumida, 3)} MPa`; 
+  mensagens.torsao += ` — Torção (máx): T=${formatarNumero(resultados.momentoTorsor.torsaoMaxima, 3)} N·m, τ=${formatarNumero(resultados.tensaoTorsaoMaxima, 3)} MPa`;
+
+  // Recomendações relativas à torção
+  if (resultados.tensaoTorsaoMaxima > resultados.material.tensaoLimiteFlexao) {
+    mensagens.recomendacoes.push('Verificar torção: considerar reforço ou alterar fixação do assento');
   }
 
   // Recomendações gerais

@@ -183,6 +183,75 @@ function verificarSeguranca(tensaoCalculada, tensaoLimite) {
 }
 
 /**
+ * Calcula a tensão de cisalhamento simples (τ = V / A)
+ * @param {number} forcaPerna - Força por perna em N (esforço cortante assumido)
+ * @param {number} areaM2 - Área da seção em m²
+ * @returns {number} Tensão de cisalhamento em MPa
+ */
+function calcularTensaoCisalhamento(forcaPerna, areaM2) {
+  if (!areaM2 || areaM2 === 0) return 0;
+  const tauPa = forcaPerna / areaM2;
+  return tauPa / 1e6;
+}
+
+/**
+ * Estima momentos torsores para casos de excentricidade da carga sobre o assento.
+ * - torsaoAssumida: pequena excentricidade (5% da menor dimensão do assento)
+ * - torsaoMaxima: carga aplicada no canto do assento (distância ao centro)
+ * @param {number} forcaTotal - Força total aplicada em N
+ * @param {number} larguraAssentoM - Largura do assento em m
+ * @param {number} profundidadeAssentoM - Profundidade do assento em m
+ * @returns {object} { torsaoAssumida, torsaoMaxima, eAssumida, eMax } em N·m e m
+ */
+function calcularMomentoTorsor(forcaTotal, larguraAssentoM, profundidadeAssentoM) {
+  // pequena excentricidade assumida (5% da menor dimensão)
+  const eAssumida = Math.min(larguraAssentoM, profundidadeAssentoM) * 0.05;
+  const torsaoAssumida = forcaTotal * eAssumida;
+
+  // excentricidade máxima: distância do centro até o canto do assento
+  const eMax = Math.sqrt((larguraAssentoM / 2) ** 2 + (profundidadeAssentoM / 2) ** 2);
+  const torsaoMaxima = forcaTotal * eMax;
+
+  return {
+    torsaoAssumida: torsaoAssumida,
+    torsaoMaxima: torsaoMaxima,
+    eAssumida: eAssumida,
+    eMax: eMax
+  };
+}
+
+/**
+ * Estima a tensão de cisalhamento devido à torção (τ_torsão).
+ * - Para seção circular sólida: J = π d⁴ / 32, τ = T * r / J
+ * - Para seção quadrada (aprox): J ≈ 0.1406 * a⁴, τ = T * r / J
+ * @param {number} momentoTorsorNm - Momento torsor em N·m
+ * @param {string} formato - 'quadrada' ou 'circular'
+ * @param {number} espessuraCm - Dimensão em cm (lado ou diâmetro)
+ * @returns {number} Tensão de torção em MPa
+ */
+function calcularTensaoTorsao(momentoTorsorNm, formato, espessuraCm) {
+  if (!momentoTorsorNm || momentoTorsorNm === 0) return 0;
+  const espessuraM = espessuraCm / 100;
+  let J = 0;
+  let r = 0;
+
+  if (formato === 'circular') {
+    const d = espessuraM;
+    J = Math.PI * (d ** 4) / 32;
+    r = d / 2;
+  } else {
+    // aproximação para seção quadrada
+    const a = espessuraM;
+    J = 0.1406 * (a ** 4);
+    r = a / 2;
+  }
+
+  if (!J || J === 0) return 0;
+  const tauPa = (momentoTorsorNm * r) / J;
+  return tauPa / 1e6;
+}
+
+/**
  * Função principal de análise completa da cadeira
  * Integra todos os cálculos em um objeto de resultados
  * @param {object} dados - Objeto com os parâmetros de entrada
@@ -229,6 +298,17 @@ function analisarCadeira(dados) {
   // Passo 8: Tensão de flexão
   const tensaoFlexao = calcularTensaoFlexao(momentoFletor, distanciaFibraExtrema, inercia);
 
+  // Passo 8.1: Tensão de cisalhamento simples (τ = V / A)
+  const tensaoCisalhamento = calcularTensaoCisalhamento(forcaPerna, area.areaM2);
+
+  // Passo 8.2: Momento torsor estimado em caso de excentricidade da carga
+  const profundidadeAssentoM = profundeAssento / 100;
+  const torsaoEstimativa = calcularMomentoTorsor(forcaTotal, larguraAssentoM, profundidadeAssentoM);
+
+  // Estimar tensões por torção para os dois casos (assumido e máximo)
+  const tensaoTorsaoAssumida = calcularTensaoTorsao(torsaoEstimativa.torsaoAssumida, formato, espessuraPerna);
+  const tensaoTorsaoMaxima = calcularTensaoTorsao(torsaoEstimativa.torsaoMaxima, formato, espessuraPerna);
+
   // Passo 9: Calcular limites efetivos com fator de segurança
   const tensaoLimiteCompressao = calcularTensaoLimiteEfetiva(
     matProp.tensaoAdmissivelCompressao,
@@ -240,10 +320,27 @@ function analisarCadeira(dados) {
     fatorSeguranca
   );
 
+  // Passo 9.1: Cisalhamento - determinar tensão admissível de cisalhamento
+  // Se a propriedade não estiver no material, estimamos como 60% da tensão admissível à flexão
+  const tensaoAdmissivelCisalhamentoMat = matProp.tensaoAdmissivelCisalhamento !== undefined
+    ? matProp.tensaoAdmissivelCisalhamento
+    : matProp.tensaoAdmissivelFlexao * 0.6;
+
+  const tensaoLimiteCisalhamento = calcularTensaoLimiteEfetiva(
+    tensaoAdmissivelCisalhamentoMat,
+    fatorSeguranca
+  );
+
   // Passo 10: Verificação de segurança
   const seguroCompressao = verificarSeguranca(tensaoNormal, tensaoLimiteCompressao);
   const seguroFlexao = verificarSeguranca(tensaoFlexao, tensaoLimiteFlexao);
-  const seguroGeral = seguroCompressao && seguroFlexao;
+  // Verificações adicionais: cisalhamento e torção (avaliamos por tensões de cisalhamento)
+  const cisalhamentoOK = verificarSeguranca(tensaoCisalhamento, tensaoLimiteCisalhamento);
+  const torsaoAssumidaOK = verificarSeguranca(tensaoTorsaoAssumida, tensaoLimiteCisalhamento);
+  const torsaoMaximaOK = verificarSeguranca(tensaoTorsaoMaxima, tensaoLimiteCisalhamento);
+
+  // Segurança geral exige todas as verificações
+  const seguroGeral = seguroCompressao && seguroFlexao && cisalhamentoOK && torsaoMaximaOK;
 
   // Montar objeto de resultados
   return {
@@ -268,20 +365,29 @@ function analisarCadeira(dados) {
     inercia: inercia,
     distanciaFibra: distanciaFibraExtrema,
     tensaoFlexao: tensaoFlexao,
+    tensaoCisalhamento: tensaoCisalhamento,
+    momentoTorsor: torsaoEstimativa,
+    tensaoTorsaoAssumida: tensaoTorsaoAssumida,
+    tensaoTorsaoMaxima: tensaoTorsaoMaxima,
 
     // Limites do material
     material: {
       nome: matProp.nome,
       tensaoAdmissivelCompressao: matProp.tensaoAdmissivelCompressao,
       tensaoAdmissivelFlexao: matProp.tensaoAdmissivelFlexao,
+      tensaoAdmissivelCisalhamento: tensaoAdmissivelCisalhamentoMat,
       tensaoLimiteCompressao: tensaoLimiteCompressao,
       tensaoLimiteFlexao: tensaoLimiteFlexao
+      ,tensaoLimiteCisalhamento: tensaoLimiteCisalhamento
     },
 
     // Verificações de segurança
     seguranca: {
       compressaoOK: seguroCompressao,
       flexaoOK: seguroFlexao,
+      cisalhamentoOK: cisalhamentoOK,
+      torsaoAssumidaOK: torsaoAssumidaOK,
+      torsaoMaxOK: torsaoMaximaOK,
       seguro: seguroGeral
     }
   };
