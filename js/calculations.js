@@ -78,20 +78,21 @@ function calcularTensaoNormal(forcaPerna, areaM2) {
 }
 
 /**
- * Calcula o momento fletor simplificado na perna
- * Aproximação didática: M = F * (L/2)
- * Onde L é a largura do assento atuando como braço de alavanca
+ * Calcula o momento fletor simplificado
+ * Modelo adotado: viga simplesmente apoiada (biapoiada) com carga concentrada no centro
+ * Momento máximo na seção central para carga total P: M_max = P * L / 4
+ * Aqui a função recebe a força por perna e converte para força total antes de aplicar a fórmula.
  * @param {number} forcaPerna - Força por perna em N
  * @param {number} larguraAssentoM - Largura do assento em metros
  * @returns {number} Momento fletor em N·m
  */
 function calcularMomentoFletor(forcaPerna, larguraAssentoM) {
-  // Braço de alavanca simplificado: metade da largura do assento
-  const braco = larguraAssentoM / 2;
-  
-  // M = F * braço
-  const momentoNm = forcaPerna * braco;
-  
+  // Converter força por perna em força total aplicada ao assento
+  const forcaTotal = forcaPerna * NUM_PERNAS;
+
+  // Momento máximo para carga central em viga biapoiada: M = F_total * L / 4
+  const momentoNm = (forcaTotal * larguraAssentoM) / 4;
+
   return momentoNm;
 }
 

@@ -22,7 +22,7 @@ const DADOS_EXEMPLO = {
   altura: 90,
   larguraAssento: 45,
   profundidade: 45,
-  espessura: 4,
+  espessura: 6,
   formato: 'quadrada',
   material: 'madeira',
   fatorSeguranca: 2
